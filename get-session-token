@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -ef -o pipefail
+
+account=$(aws sts get-caller-identity --query Account --output text)
+read -p "put your token code(e.g. 123456): " code
+res=$(aws sts get-session-token --serial-number arn:aws:iam::${account}:mfa/sisisin-operator --token-code $code --query Credentials)
+
+aws_access_key_id=$(echo $res | jq .AccessKeyId -r)
+aws_secret_access_key=$(echo $res | jq .SecretAccessKey -r)
+aws_session_token=$(echo $res | jq .SessionToken -r)
+
+cat <<EOF
+export AWS_ACCESS_KEY_ID=$aws_access_key_id
+export AWS_SECRET_ACCESS_KEY=$aws_secret_access_key
+export AWS_SESSION_TOKEN=$aws_session_token
+EOF
