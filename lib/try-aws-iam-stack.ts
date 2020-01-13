@@ -62,12 +62,12 @@ export class TryAwsIamStack extends cdk.Stack {
       ],
     });
 
-    users.forEach(userName => {
-      const secret = new secretsmanager.Secret(this, 'ForUserSecret', {
+    const userResources = users.map(userName => {
+      const secret = new secretsmanager.Secret(this, `${userName}ForUserSecret`, {
         generateSecretString: { passwordLength: 32 },
       });
 
-      new cdk.CfnOutput(this, 'UserSecretValue', {
+      const output = new cdk.CfnOutput(this, `${userName}UserSecretValue`, {
         value: [
           'aws secretsmanager get-secret-value',
           `--secret-id ${secret.secretArn}`,
@@ -77,16 +77,20 @@ export class TryAwsIamStack extends cdk.Stack {
         ].join(' '),
       });
 
-      new iam.User(this, userName, {
-        groups: [adminGroup],
+      const user = new iam.CfnUser(this, userName, {
+        groups: [adminGroup.groupName],
         userName: userName,
-        passwordResetRequired: true,
-        password: secret.secretValue,
+        loginProfile: {
+          passwordResetRequired: true,
+          password: secret.secretValue.toString(),
+        },
       });
+
+      return { secret, output, user };
     });
 
     if (users.length !== 0) {
-      new iam.CfnRole(this, 'AdminRole', {
+      const adminRole = new iam.CfnRole(this, 'AdminRole', {
         managedPolicyArns: [iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess').managedPolicyArn],
         assumeRolePolicyDocument: new iam.PolicyDocument({
           statements: [
@@ -103,6 +107,7 @@ export class TryAwsIamStack extends cdk.Stack {
           ],
         }),
       });
+      userResources.forEach(({ user }) => adminRole.addDependsOn(user));
     }
   }
 }

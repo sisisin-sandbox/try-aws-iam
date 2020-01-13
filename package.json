@@ -10,7 +10,9 @@
     "test": "jest",
     "cdk": "cdk",
     "predeploy": "ts-node ./scripts/predeploy.ts",
-    "deploy": "cdk deploy TryAwsIamStack"
+    "deploy": "cdk deploy TryAwsIamStack",
+    "predestroy": "ts-node ./scripts/preDestroy.ts",
+    "destroy": "cdk destroy TryAwsIamStack"
   },
   "devDependencies": {
     "@aws-cdk/assert": "^1.20.0",
